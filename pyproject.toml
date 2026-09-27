@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "oracle-mcp"
+dynamic = ["version"]
+description = "Servidor MCP de sólo lectura para proyectos Oracle"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "oracle-metalenguaje==0.34.0",
+    "trackertast==0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Segtem/oracle-mcp"
+Repository = "https://github.com/Segtem/oracle-mcp"
+
+[project.scripts]
+oracle-mcp = "oracle_mcp.server:main"
+
+[tool.hatch.version]
+path = "oracle_mcp/__init__.py"

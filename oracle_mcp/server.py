@@ -19,27 +19,30 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parents[1]
-sys.path = [str(RAIZ), *sys.path]
+from oracle_mcp import __version__
 
-from nucleo.medida import Informe, Medida, MedidaMalDeclarada, relaciones_de_medida  # noqa: E402
-from nucleo.proyecto import (EscalaresInvalidas, EscalaresNoConfiables,  # noqa: E402
-                             ID_MEDIDA_RE, SIN_COTA, Proyecto, ProyectoInvalido,
-                             catalogo_efectivo, configuracion, cotas_de_sombra,
-                             escalares_del_proyecto, macros_del_proyecto,
-                             presentar_ruta, relaciones_del_proyecto)
-from nucleo.sintaxis import ErrorSintaxis, fragmento_de_error, leer_con_mapa  # noqa: E402
-from nucleo.version import (VERSION_DISTRIBUCION, VersionInvalida,  # noqa: E402
-                            exigir_sintaxis_compatible)
-from tools.juzgar import (MedidaDesconocida, MedidaNoAplicable,  # noqa: E402
-                          juzgar_evidencia)
-from tools.medida import ejercicio_del_catalogo, relaciones_por_alias  # noqa: E402
-from tools.sesion import resolver_cli  # noqa: E402
-from tools.tareas import (IdAmbiguo, RutaInsegura, TareaError,  # noqa: E402
-                          TareaInvalida, TareaNoEncontrada, auditar_tareas,
-                          filtrar_tareas, leer_tarea)
-from tools.tareas_contexto import buscar_en_tracker  # noqa: E402
-from tools.tareas_hechos import extraer_hechos  # noqa: E402
+from oracle_metalenguaje.nucleo.medida import (Informe, Medida,  # noqa: E402
+                                               MedidaMalDeclarada,
+                                               relaciones_de_medida)
+from oracle_metalenguaje.nucleo.proyecto import (  # noqa: E402
+    ID_MEDIDA_RE, SIN_COTA, EscalaresInvalidas, EscalaresNoConfiables,
+    Proyecto, ProyectoInvalido, catalogo_efectivo, configuracion,
+    cotas_de_sombra, escalares_del_proyecto, macros_del_proyecto,
+    presentar_ruta, relaciones_del_proyecto)
+from oracle_metalenguaje.nucleo.sintaxis import (  # noqa: E402
+    ErrorSintaxis, fragmento_de_error, leer_con_mapa)
+from oracle_metalenguaje.nucleo.version import (  # noqa: E402
+    VERSION_DISTRIBUCION, VersionInvalida, exigir_sintaxis_compatible)
+from oracle_metalenguaje.tools.juzgar import (  # noqa: E402
+    MedidaDesconocida, MedidaNoAplicable, juzgar_evidencia)
+from oracle_metalenguaje.tools.medida import (  # noqa: E402
+    ejercicio_del_catalogo, relaciones_por_alias)
+from oracle_metalenguaje.tools.sesion import resolver_cli  # noqa: E402
+from trackertast.tasks import (  # noqa: E402
+    IdAmbiguo, RutaInsegura, TareaError, TareaInvalida, TareaNoEncontrada,
+    auditar_tareas, filtrar_tareas, leer_tarea)
+from trackertast.context import buscar_en_tracker  # noqa: E402
+from trackertast.facts import extraer_hechos  # noqa: E402
 
 
 PROTOCOLO = "2025-11-25"
@@ -122,7 +125,7 @@ _ESQUEMA_SOMBRA = {
 
 
 HERRAMIENTA_CATALOGO = {
-    "name": "oracle_catalogo_efectivo",
+    "name": "oracle_effective_catalog",
     "title": "Catálogo efectivo de Oracle",
     "description": "Consulta medidas efectivas del proyecto fijado. Sin ids: índice; con ids: detalle. No evalúa evidencia.",
     "annotations": deepcopy(_ANOTACIONES),
@@ -195,7 +198,7 @@ HERRAMIENTA_CATALOGO = {
 }
 
 HERRAMIENTA_EVALUAR = {
-    "name": "oracle_evaluar",
+    "name": "oracle_evaluate",
     "title": "Evaluar una medida en memoria",
     "description": "Evalúa una medida efectiva por id o texto sin guardar contra evidencia JSON. Distingue verde, rojo y sin_evidencia; incluye umbral, testigos y alcance. No demuestra corrección de la medida.",
     "annotations": deepcopy(_ANOTACIONES),
@@ -240,10 +243,10 @@ HERRAMIENTA_EVALUAR = {
     },
 }
 
-# HERRAMIENTAS es la fuente del bloque normativo de MCP-CONTRATO.md.
-# Regenerar con python3 -m tools.mcp_contrato; la suite verifica que esté actualizado.
+# HERRAMIENTAS es la fuente del bloque normativo de docs/contract.md.
+# Regenerar con python3 -m oracle_mcp.contract; la suite verifica que esté actualizado.
 HERRAMIENTA_DESAFIAR = {
-    "name": "oracle_desafiar",
+    "name": "oracle_challenge",
     "title": "Desafiar una medida con corpus y mutación",
     "description": "Desafía por id o texto con corpus y diferenciales opcionales y casos efímeros. Exige ambas polaridades y muta; informa discordancias, sobrevivientes y rechazos. No demuestra corrección semántica.",
     "annotations": deepcopy(_ANOTACIONES),
@@ -459,7 +462,7 @@ HERRAMIENTA_DESAFIAR = {
 }
 
 HERRAMIENTA_JUZGAR = {
-    "name": "oracle_juzgar",
+    "name": "oracle_judge",
     "title": "Juzgar evidencia contra el catálogo efectivo",
     "description": "Juzga evidencia contra el catálogo efectivo (ids selecciona un subconjunto). Informa no aplicadas, sombras y cotas. ok exige medidas satisfechas y sombras dentro de cota; no ejecuta escalares no autorizadas.",
     "annotations": deepcopy(_ANOTACIONES),
@@ -572,7 +575,7 @@ HERRAMIENTA_JUZGAR = {
 }
 
 HERRAMIENTA_TAREAS = {
-    "name": "oracle_tareas",
+    "name": "oracle_tasks",
     "title": "Consultar el tracker de tareas del proyecto",
     "description": "Lee tareas/: listar sin cuerpos; ver por id o sufijo/prefijo con cuerpo completo; buscar texto o extraer hechos. Sin tracker: TRACKER_AUSENTE.",
     "annotations": deepcopy(_ANOTACIONES),
@@ -888,8 +891,8 @@ def _medida_en_memoria(especificacion: dict, macros) -> Medida:
         lectura = leer_con_mapa(texto, macros=macros)
         exigir_sintaxis_compatible(lectura.version)
         datos = lectura.datos
-        from nucleo.forma import error_forma
-        from nucleo.sintaxis import imprimir
+        from oracle_metalenguaje.nucleo.forma import error_forma
+        from oracle_metalenguaje.nucleo.sintaxis import imprimir
         error = error_forma("<texto de medida>", texto, imprimir(datos, macros=macros))
         if error:
             raise ErrorHerramienta("MEDIDA_INVALIDA", error)
@@ -1290,7 +1293,7 @@ def _casos_del_desafio(argumentos, mid: str, corpus) -> list[dict]:
 def _desafiar(medida: Medida, casos: list[dict]) -> dict:
     """El lazo: reproducir, exigir las dos polaridades, mutar. En ese orden y sin seguir si falla.
 
-    `nucleo.mutacion.correr` saltea en silencio un caso que no está en su estado esperado —«no fija
+    `oracle_metalenguaje.nucleo.mutacion.correr` saltea en silencio un caso que no está en su estado esperado —«no fija
     nada»— y para una ronda del arnés eso alcanza. Acá no: si el original no reproduce lo que el
     caso espera, mutar mide otra cosa y el número saldría igual de convincente. Se corta y se dice
     cuál no reprodujo.
@@ -1299,7 +1302,7 @@ def _desafiar(medida: Medida, casos: list[dict]) -> dict:
     afirma algo del mundo, sin evidencia afirma que no se pudo mirar. Colapsarlos acá le diría a un
     agente que su medida falló cuando lo que faltó fue la relación.
     """
-    from nucleo.mutacion import mutantes
+    from oracle_metalenguaje.nucleo.mutacion import mutantes
 
     def observar(m, evidencia):
         try:
@@ -1408,7 +1411,7 @@ def desafiar_para_mcp(proy: Proyecto, argumentos, *, confiar_escalares: bool = F
                 medida = _medida_en_memoria(especificacion, macros)
             corpus = []
             if argumentos.get("usar_evidencia_del_proyecto", True):
-                from nucleo.caso import cargar_casos
+                from oracle_metalenguaje.nucleo.caso import cargar_casos
                 try:
                     corpus = cargar_casos(proy.corpus)
                 except Exception as e:
@@ -1882,7 +1885,7 @@ class Servidor:
             self._respuesta(mensaje, {
                 "protocolVersion": PROTOCOLO,
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": NOMBRE_SERVIDOR, "version": VERSION_DISTRIBUCION},
+                "serverInfo": {"name": NOMBRE_SERVIDOR, "version": __version__},
             })
         elif metodo == "notifications/initialized":
             if not es_pedido and self.estado == "inicializando":

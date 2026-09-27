@@ -14,10 +14,13 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from nucleo.version import VERSION_DISTRIBUCION
-from nucleo.sintaxis import imprimir
-from tools import mcp
+from oracle_metalenguaje.nucleo.version import VERSION_DISTRIBUCION
+from oracle_metalenguaje.nucleo.sintaxis import imprimir
+import oracle_mcp
+from oracle_mcp import server as mcp
 
+
+RAIZ_REPO = Path(__file__).resolve().parents[1]
 
 def _linea(mensaje) -> bytes:
     """Produce exactamente la línea compacta UTF-8 que escribiría un cliente MCP."""
@@ -85,7 +88,7 @@ def _conversacion(*pedidos: dict) -> bytes:
 def _ejecutar(proyecto: Path, entrada: bytes, *argumentos: str) -> subprocess.CompletedProcess:
     """Habla con el entry point real para fijar stdin, stdout, stderr y el código de salida."""
     return subprocess.run(
-        [sys.executable, str(mcp.RAIZ / "tools" / "mcp.py"),
+        [sys.executable, "-m", "oracle_mcp.server",
          "--proyecto", str(proyecto), *argumentos],
         input=entrada,
         capture_output=True,
@@ -98,7 +101,7 @@ def _pedido_evaluar(indice: int, argumentos) -> dict:
     """Nombra la segunda herramienta sin ocultar el sobre que cada conversación transmite."""
     return {
         "jsonrpc": "2.0", "id": indice, "method": "tools/call",
-        "params": {"name": "oracle_evaluar", "arguments": argumentos},
+        "params": {"name": "oracle_evaluate", "arguments": argumentos},
     }
 
 
@@ -156,7 +159,7 @@ class AConversacionCompletaTests(unittest.TestCase):
                 {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
                 {
                     "jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                    "params": {"name": "oracle_catalogo_efectivo", "arguments": {}},
+                    "params": {"name": "oracle_effective_catalog", "arguments": {}},
                 },
             )
             resultado = _ejecutar(raiz, entrada)
@@ -173,7 +176,7 @@ class AConversacionCompletaTests(unittest.TestCase):
             "result": {
                 "protocolVersion": "2025-11-25",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "oracle-mcp", "version": "0.33.0"},
+                "serverInfo": {"name": "oracle-mcp", "version": oracle_mcp.__version__},
             },
         })
         self.assertEqual(respuestas[1]["result"]["tools"], mcp.HERRAMIENTAS)
@@ -206,7 +209,7 @@ class AConversacionCompletaTests(unittest.TestCase):
 
     def test_tools_list_publica_las_tres_con_el_contrato_normativo_entero(self) -> None:
         """Comparar sólo el nombre dejaría divergir la unión cerrada y los tres estados sin ruido."""
-        contrato = (mcp.RAIZ / "docs" / "mcp-contrato.md").read_text(encoding="utf-8")
+        contrato = (RAIZ_REPO / "docs" / "contract.md").read_text(encoding="utf-8")
         bloque = re.search(
             r"<!-- herramientas-json:inicio -->\n```json\n(.*?)\n```\n"
             r"<!-- herramientas-json:fin -->",
@@ -647,7 +650,7 @@ class CatalogoEfectivoTests(unittest.TestCase):
             pedido = {
                 "jsonrpc": "2.0", "id": 3, "method": "tools/call",
                 "params": {
-                    "name": "oracle_catalogo_efectivo",
+                    "name": "oracle_effective_catalog",
                     "arguments": {"ids": ["demo.zeta", "demo.alfa"]},
                 },
             }
@@ -682,7 +685,7 @@ class CatalogoEfectivoTests(unittest.TestCase):
             pedidos = tuple({
                 "jsonrpc": "2.0", "id": indice, "method": "tools/call",
                 "params": {
-                    "name": "oracle_catalogo_efectivo", "arguments": {"ids": [mid]},
+                    "name": "oracle_effective_catalog", "arguments": {"ids": [mid]},
                 },
             } for indice, mid in (
                 (2, "meta.agrupar_no_agranda_la_relacion"),
@@ -712,7 +715,7 @@ class CatalogoEfectivoTests(unittest.TestCase):
             (raiz / "catalogos/demo/rota.json").write_text("{", encoding="utf-8")
             pedido = {
                 "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-                "params": {"name": "oracle_catalogo_efectivo", "arguments": {}},
+                "params": {"name": "oracle_effective_catalog", "arguments": {}},
             }
             resultado = _ejecutar(raiz, _conversacion(pedido))
 
@@ -734,7 +737,7 @@ class CatalogoEfectivoTests(unittest.TestCase):
                 rota.write_text("{", encoding="utf-8")
                 pedido = {
                     "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-                    "params": {"name": "oracle_catalogo_efectivo", "arguments": {}},
+                    "params": {"name": "oracle_effective_catalog", "arguments": {}},
                 }
                 resultado = _ejecutar(raiz, _conversacion(pedido))
 
@@ -774,7 +777,7 @@ class CatalogoEfectivoTests(unittest.TestCase):
                 "# no declara nada, pero sigue siendo código externo\n", encoding="utf-8")
             pedido = {
                 "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-                "params": {"name": "oracle_catalogo_efectivo", "arguments": {}},
+                "params": {"name": "oracle_effective_catalog", "arguments": {}},
             }
             sin_permiso = _ejecutar(raiz, _conversacion(pedido))
             con_permiso = _ejecutar(
@@ -796,7 +799,7 @@ class CatalogoEfectivoTests(unittest.TestCase):
             raiz = _proyecto(Path(td), _medida("demo.uno"))
             pedidos = tuple({
                 "jsonrpc": "2.0", "id": indice, "method": "tools/call",
-                "params": {"name": "oracle_catalogo_efectivo", "arguments": argumentos},
+                "params": {"name": "oracle_effective_catalog", "arguments": argumentos},
             } for indice, argumentos in (
                 (2, {"ids": []}), (3, {"id": "demo.uno"}), (4, [])))
             resultado = _ejecutar(raiz, _conversacion(*pedidos))
@@ -816,7 +819,7 @@ class CatalogoEfectivoTests(unittest.TestCase):
             pedidos = tuple({
                 "jsonrpc": "2.0", "id": indice, "method": "tools/call",
                 "params": {
-                    "name": "oracle_catalogo_efectivo", "arguments": {"ids": [mid]},
+                    "name": "oracle_effective_catalog", "arguments": {"ids": [mid]},
                 },
             } for indice, mid in ((2, 7), (3, "sin_dominio")))
             resultado = _ejecutar(raiz, _conversacion(*pedidos))
@@ -1072,7 +1075,7 @@ class ErroresDeProtocoloTests(unittest.TestCase):
                 {
                     "jsonrpc": "2.0", "id": 3, "method": "tools/call",
                     "params": {
-                        "name": "oracle_catalogo_efectivo", "arguments": {},
+                        "name": "oracle_effective_catalog", "arguments": {},
                         "inesperado": 1,
                     },
                 },
@@ -1188,7 +1191,7 @@ class TerminacionDelTransporteTests(unittest.TestCase):
             "result": {
                 "protocolVersion": "2025-11-25",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "oracle-mcp", "version": "0.33.0"},
+                "serverInfo": {"name": "oracle-mcp", "version": oracle_mcp.__version__},
             },
         }])
 
@@ -1199,7 +1202,7 @@ class TerminacionDelTransporteTests(unittest.TestCase):
             (raiz / "escalares.py").write_text("# código externo\n", encoding="utf-8")
             entrada = _conversacion({
                 "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-                "params": {"name": "oracle_catalogo_efectivo", "arguments": {}},
+                "params": {"name": "oracle_effective_catalog", "arguments": {}},
             })
             salida = io.BytesIO()
             codigo = mcp.servir(mcp.Proyecto(raiz), io.BytesIO(entrada), salida)
@@ -1216,17 +1219,20 @@ class VersionYEntradaTests(unittest.TestCase):
 
     def test_version_y_entry_point_tienen_una_sola_fuente(self) -> None:
         """Duplicar la versión en el adaptador permitiría que el checkout y el binario discrepen."""
-        pyproject = (mcp.RAIZ / "pyproject.toml").read_text(encoding="utf-8")
-        self.assertEqual(VERSION_DISTRIBUCION, "0.33.0")
+        pyproject = (RAIZ_REPO / "pyproject.toml").read_text(encoding="utf-8")
+        # El servidor usa API interna de Oracle: la versión instalada tiene que ser la fijada.
+        fijada = re.search(r'"oracle-metalenguaje==([0-9.]+)"', pyproject).group(1)
+        self.assertEqual(VERSION_DISTRIBUCION, fijada)
+        self.assertIn('path = "oracle_mcp/__init__.py"', pyproject)
         self.assertEqual(
-            'oracle-mcp = "oracle_metalenguaje.tools.mcp:main"' in pyproject, True)
+            'oracle-mcp = "oracle_mcp.server:main"' in pyproject, True)
 
     def test_proyecto_inexistente_hace_fallar_el_punto_de_entrada(self) -> None:
         """Un destino que no existe no puede abrir un servidor sobre un proyecto implícito."""
         with tempfile.TemporaryDirectory() as td:
             inexistente = Path(td) / "no-existe"
             resultado = subprocess.run(
-                [sys.executable, str(mcp.RAIZ / "tools" / "mcp.py"),
+                [sys.executable, "-m", "oracle_mcp.server",
                  "--proyecto", str(inexistente)],
                 input=b"",
                 capture_output=True,
@@ -1261,8 +1267,8 @@ class LosCuatroQueLaMutacionDejoVivosTests(unittest.TestCase):
             campos=tuple(SimpleNamespace(nombre=c) for c in campos))
 
     def _medida(self, texto: str):
-        from nucleo.macro import macros_base
-        from nucleo.sintaxis import leer_con_mapa
+        from oracle_metalenguaje.nucleo.macro import macros_base
+        from oracle_metalenguaje.nucleo.sintaxis import leer_con_mapa
 
         lectura = leer_con_mapa(texto, macros=macros_base())
         return mcp.Medida.de_datos(lectura.datos, macros=macros_base())
@@ -1365,8 +1371,8 @@ class DesafiarTests(unittest.TestCase):
              "    alcance \"NO ve otros campos\"\n")
 
     def _medida(self):
-        from nucleo.macro import macros_base
-        from nucleo.sintaxis import leer_con_mapa
+        from oracle_metalenguaje.nucleo.macro import macros_base
+        from oracle_metalenguaje.nucleo.sintaxis import leer_con_mapa
 
         lectura = leer_con_mapa(self.TEXTO, macros=macros_base())
         return mcp.Medida.de_datos(lectura.datos, macros=macros_base())
@@ -1411,8 +1417,8 @@ class DesafiarTests(unittest.TestCase):
     def test_sin_evidencia_no_se_informa_como_rojo(self) -> None:
         """Rojo afirma algo del mundo; sin evidencia afirma que no se pudo mirar. Colapsarlos le
         diría a un agente que su medida falló cuando lo que faltó fue la relación."""
-        from nucleo.macro import macros_base
-        from nucleo.sintaxis import leer_con_mapa
+        from oracle_metalenguaje.nucleo.macro import macros_base
+        from oracle_metalenguaje.nucleo.sintaxis import leer_con_mapa
 
         lectura = leer_con_mapa(
             "ninguno-requiere d.exige:\n"
@@ -1535,8 +1541,8 @@ class DesafiarLosCaminosQueNadieRecorreTests(unittest.TestCase):
     """
 
     def _medida(self, texto: str):
-        from nucleo.macro import macros_base
-        from nucleo.sintaxis import leer_con_mapa
+        from oracle_metalenguaje.nucleo.macro import macros_base
+        from oracle_metalenguaje.nucleo.sintaxis import leer_con_mapa
 
         lectura = leer_con_mapa(texto, macros=macros_base())
         return mcp.Medida.de_datos(lectura.datos, macros=macros_base())
@@ -1569,7 +1575,7 @@ class DesafiarLosCaminosQueNadieRecorreTests(unittest.TestCase):
     def test_sin_mutantes_no_es_todos_detectados(self) -> None:
         """Un denominador vacío no prueba nada. Llamarlo verde sería el caso
         `019-ronda-sin-mutantes-declarada-verde` del corpus, un nivel más arriba."""
-        with mock.patch("nucleo.mutacion.mutantes", return_value=[]):
+        with mock.patch("oracle_metalenguaje.nucleo.mutacion.mutantes", return_value=[]):
             resultado = mcp._desafiar(self._base(), self._casos())
 
         self.assertEqual(resultado["conclusion"], "sin_mutantes")
@@ -1580,7 +1586,7 @@ class DesafiarLosCaminosQueNadieRecorreTests(unittest.TestCase):
     def test_un_mutante_que_no_construye_cuenta_como_rechazo_del_algebra(self) -> None:
         """No lo discriminó ningún caso: lo rechazó el cargador antes de evaluar. Contarlo como
         conducta publicaría cobertura que el corpus no aportó."""
-        with mock.patch("nucleo.mutacion.mutantes",
+        with mock.patch("oracle_metalenguaje.nucleo.mutacion.mutantes",
                         return_value=[("invalido", ["medida", "d.rota"])]):
             resultado = mcp._desafiar(self._base(), self._casos())
 
@@ -1600,7 +1606,7 @@ class DesafiarLosCaminosQueNadieRecorreTests(unittest.TestCase):
             "    ambito universal\n"
             "    alcance \"NO ve\"\n").a_datos()
 
-        with mock.patch("nucleo.mutacion.mutantes", return_value=[("revienta", roto)]):
+        with mock.patch("oracle_metalenguaje.nucleo.mutacion.mutantes", return_value=[("revienta", roto)]):
             resultado = mcp._desafiar(self._base(), self._casos())
 
         self.assertEqual(resultado["mutacion"]["rechazados_por_el_algebra"], 1)
@@ -1611,7 +1617,7 @@ class DesafiarLosCaminosQueNadieRecorreTests(unittest.TestCase):
         """El sobreviviente se publica con nombre: un conteo sin nombres no dice qué escribir."""
         igual = self._base().a_datos()
 
-        with mock.patch("nucleo.mutacion.mutantes", return_value=[("clon", igual)]):
+        with mock.patch("oracle_metalenguaje.nucleo.mutacion.mutantes", return_value=[("clon", igual)]):
             resultado = mcp._desafiar(self._base(), self._casos())
 
         self.assertEqual(resultado["conclusion"], "sobrevivientes")

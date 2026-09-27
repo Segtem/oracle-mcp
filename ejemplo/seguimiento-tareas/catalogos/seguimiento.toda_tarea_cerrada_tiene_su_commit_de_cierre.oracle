@@ -1,0 +1,12 @@
+medida seguimiento.toda_tarea_cerrada_tiene_su_commit_de_cierre:
+    de tarea_seguimiento t
+    unir commit_seguimiento c
+    donde t.estado_declarado == "CERRADA"
+    agrupar:
+        clave tarea = t.id
+        agregado cierres = suma(c.tarea_nombrada == t.id y c.es_cierre == true)
+    donde cierres == 0
+    resumen contar(1)
+    umbral <= 0 segun contrato porque "toda tarea cerrada tiene su commit de cierre"
+    ambito universal
+    alcance "cuenta tareas cerradas sin commit de cierre"

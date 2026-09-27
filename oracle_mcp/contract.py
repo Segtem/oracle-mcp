@@ -2,12 +2,12 @@
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from oracle_mcp.server import HERRAMIENTAS
 
-from tools.mcp import HERRAMIENTAS, RAIZ  # noqa: E402
+# Herramienta del repositorio: regenera docs/contract.md del checkout.
+RAIZ = Path(__file__).resolve().parents[1]
 
 
 def regenerar(documento: str) -> str:
@@ -23,12 +23,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    ruta = RAIZ / "docs" / "mcp-contrato.md"
+    ruta = RAIZ / "docs" / "contract.md"
     original = ruta.read_text(encoding="utf-8")
     generado = regenerar(original)
     if args.check:
         if original != generado:
-            print("Contrato desactualizado: ejecutar python3 -m tools.mcp_contrato")
+            print("Contrato desactualizado: ejecutar python3 -m oracle_mcp.contract")
             return 1
     else:
         ruta.write_text(generado, encoding="utf-8")

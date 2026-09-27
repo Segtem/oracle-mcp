@@ -1,0 +1,7 @@
+medida seguimiento.referencias_locales_presentes:
+    de referencia_seguimiento r
+    donde r.estado == "ausente"
+    resumen contar(1)
+    umbral <= 0 segun contrato porque "toda referencia local debe estar presente"
+    ambito universal
+    alcance "cuenta referencias locales ausentes"

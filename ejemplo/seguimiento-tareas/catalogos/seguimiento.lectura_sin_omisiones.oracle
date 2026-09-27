@@ -1,0 +1,7 @@
+medida seguimiento.lectura_sin_omisiones:
+    de lectura_seguimiento l
+    donde l.completa == false
+    resumen contar(1)
+    umbral <= 0 segun contrato porque "la lectura debe ser completa"
+    ambito universal
+    alcance "cuenta lecturas incompletas"

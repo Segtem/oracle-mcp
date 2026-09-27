@@ -15,7 +15,8 @@ import unittest
 from pathlib import Path
 
 from tests.test_mcp import _conversacion, _desenmarcar
-from tools import cli, mcp
+from oracle_metalenguaje.tools import cli
+from oracle_mcp import server as mcp
 
 RAIZ = Path(__file__).resolve().parents[1]
 CIERRES = "seguimiento.toda_tarea_cerrada_tiene_su_commit_de_cierre"
@@ -80,8 +81,8 @@ class ListaTests(Base):
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})), salida)
         herramientas = _desenmarcar(salida.getvalue())[1]["result"]["tools"]
         self.assertEqual(sorted(h["name"] for h in herramientas),
-                         ["oracle_catalogo_efectivo", "oracle_desafiar", "oracle_evaluar",
-                          "oracle_juzgar", "oracle_tareas"])
+                         ["oracle_challenge", "oracle_effective_catalog", "oracle_evaluate",
+                          "oracle_judge", "oracle_tasks"])
         for h in herramientas:
             self.assertEqual(h["annotations"], SOLO_LECTURA, h["name"])
 
@@ -91,7 +92,7 @@ class EvaluarConSombraTests(Base):
                  "commit_seguimiento": [_commit("t1", False)]}
 
     def evaluar(self) -> dict:
-        return self.ok("oracle_evaluar", {"medida": {"id": CIERRES}, "evidencia": self.EVIDENCIA})
+        return self.ok("oracle_evaluate", {"medida": {"id": CIERRES}, "evidencia": self.EVIDENCIA})
 
     def test_sin_sombra_es_null_y_el_esquema_es_v2(self) -> None:
         self.sombra(REFERENCIAS, None)
@@ -119,7 +120,7 @@ class EvaluarConSombraTests(Base):
 
     def test_un_verde_en_sombra_no_se_perdona_porque_no_hay_nada_que_perdonar(self) -> None:
         self.sombra(CIERRES, 5)
-        r = self.ok("oracle_evaluar", {"medida": {"id": CIERRES}, "evidencia": {
+        r = self.ok("oracle_evaluate", {"medida": {"id": CIERRES}, "evidencia": {
             "tarea_seguimiento": [_tarea("t1", "CERRADA")],
             "commit_seguimiento": [_commit("t1", True)]}})
         self.assertEqual(r["estado"], "verde")
@@ -128,14 +129,14 @@ class EvaluarConSombraTests(Base):
     def test_por_texto_nunca_esta_en_sombra(self) -> None:
         self.sombra(CIERRES, 5)
         texto = (self.raiz / "catalogos" / f"{CIERRES}.oracle").read_text(encoding="utf-8")
-        r = self.ok("oracle_evaluar", {"medida": {"texto": texto, "formato": "oracle"},
+        r = self.ok("oracle_evaluate", {"medida": {"texto": texto, "formato": "oracle"},
                                        "evidencia": self.EVIDENCIA})
         self.assertIsNone(r["sombra"])
 
 
 class JuzgarTests(Base):
     def test_juzga_el_catalogo_y_nombra_las_no_aplicadas(self) -> None:
-        r = self.ok("oracle_juzgar", {"evidencia": {"referencia_seguimiento": [_referencia("presente")]}})
+        r = self.ok("oracle_judge", {"evidencia": {"referencia_seguimiento": [_referencia("presente")]}})
         self.assertEqual(r["esquema"], "oracle.mcp/juzgar/v1")
         self.assertIs(r["ok"], False)
         self.assertEqual([m["id"] for m in r["medidas"]], [REFERENCIAS])
@@ -145,23 +146,23 @@ class JuzgarTests(Base):
         self.assertEqual(r["no_juzgaron"], [])
 
     def test_un_rojo_hace_ok_falso(self) -> None:
-        r = self.ok("oracle_juzgar", {"evidencia": {"referencia_seguimiento": [_referencia("ausente")]}})
+        r = self.ok("oracle_judge", {"evidencia": {"referencia_seguimiento": [_referencia("ausente")]}})
         self.assertIs(r["ok"], False)
         self.assertEqual(r["medidas"][0]["estado"], "rojo")
 
     def test_la_sombra_con_cota_decide_ok(self) -> None:
         ev = {"referencia_seguimiento": [_referencia("ausente"), _referencia("ausente")]}
         self.sombra(REFERENCIAS, 2)
-        r = self.ok("oracle_juzgar", {"evidencia": ev, "ids": [REFERENCIAS]})
+        r = self.ok("oracle_judge", {"evidencia": ev, "ids": [REFERENCIAS]})
         self.assertIs(r["ok"], True)
         self.assertIs(r["medidas"][0]["sombra"]["perdona"], True)
         self.sombra(REFERENCIAS, 1)
-        r = self.ok("oracle_juzgar", {"evidencia": ev, "ids": [REFERENCIAS]})
+        r = self.ok("oracle_judge", {"evidencia": ev, "ids": [REFERENCIAS]})
         self.assertIs(r["ok"], False)
         self.assertIs(r["medidas"][0]["sombra"]["perdona"], False)
 
     def test_ids_restringe(self) -> None:
-        r = self.ok("oracle_juzgar", {"evidencia": {
+        r = self.ok("oracle_judge", {"evidencia": {
             "referencia_seguimiento": [_referencia("presente")],
             "lectura_seguimiento": [{"esquema": "oracle.tareas.hechos/v1", "completa": True,
                                      "git": "no_solicitado", "head": ""}]},
@@ -169,18 +170,18 @@ class JuzgarTests(Base):
         self.assertEqual([m["id"] for m in r["medidas"]], [LECTURA])
 
     def test_sin_medidas_aplicables_no_es_un_verde(self) -> None:
-        r = self.llamar("oracle_juzgar", {"evidencia": {"nada": [{"x": 1}]}})
+        r = self.llamar("oracle_judge", {"evidencia": {"nada": [{"x": 1}]}})
         if not r["isError"]:
             self.assertIs(r["structuredContent"]["ok"], False)
             self.assertTrue(r["structuredContent"]["advertencias"])
 
     def test_un_id_que_no_existe_es_error(self) -> None:
-        r = self.llamar("oracle_juzgar", {"evidencia": {"referencia_seguimiento": []},
+        r = self.llamar("oracle_judge", {"evidencia": {"referencia_seguimiento": []},
                                           "ids": ["seguimiento.no_existe"]})
         self.assertIs(r["isError"], True)
 
     def test_ids_repetidos_es_error(self) -> None:
-        r = self.llamar("oracle_juzgar", {"evidencia": {"referencia_seguimiento": []},
+        r = self.llamar("oracle_judge", {"evidencia": {"referencia_seguimiento": []},
                                           "ids": [REFERENCIAS, REFERENCIAS]})
         self.assertIs(r["isError"], True)
 
@@ -194,21 +195,21 @@ class BordesDeLaMutacionTests(Base):
         return r["content"][0]["text"]
 
     def test_una_propiedad_de_mas_se_nombra(self) -> None:
-        self.assertIn("$.zzz", self.texto_de_error("oracle_juzgar", {"evidencia": {}, "zzz": 1}))
-        self.assertIn("$.zzz", self.texto_de_error("oracle_tareas", {"accion": "listar", "zzz": 1}))
+        self.assertIn("$.zzz", self.texto_de_error("oracle_judge", {"evidencia": {}, "zzz": 1}))
+        self.assertIn("$.zzz", self.texto_de_error("oracle_tasks", {"accion": "listar", "zzz": 1}))
 
     def test_un_id_que_no_es_texto_es_argumento_invalido(self) -> None:
-        self.assertTrue(self.texto_de_error("oracle_juzgar", {"evidencia": {}, "ids": [123]})
+        self.assertTrue(self.texto_de_error("oracle_judge", {"evidencia": {}, "ids": [123]})
                         .startswith("ARGUMENTOS_INVALIDOS"))
 
     def test_git_que_no_es_booleano_es_argumento_invalido(self) -> None:
         (self.raiz / "tareas").mkdir()
-        self.assertTrue(self.texto_de_error("oracle_tareas", {"accion": "hechos", "git": "si"})
+        self.assertTrue(self.texto_de_error("oracle_tasks", {"accion": "hechos", "git": "si"})
                         .startswith("ARGUMENTOS_INVALIDOS"))
 
     def test_hechos_sin_git_no_le_pregunta_a_la_historia(self) -> None:
         (self.raiz / "tareas").mkdir()
-        r = self.ok("oracle_tareas", {"accion": "hechos"})
+        r = self.ok("oracle_tasks", {"accion": "hechos"})
         self.assertEqual(r["resultado"]["lectura_seguimiento"][0]["git"], "no_solicitado")
 
     def test_juzgar_sin_autorizacion_no_ejecuta_escalares(self) -> None:
@@ -221,13 +222,13 @@ class BordesDeLaMutacionTests(Base):
             str(ctx.exception))
 
     def test_los_testigos_se_cortan_en_cinco(self) -> None:
-        r = self.ok("oracle_juzgar", {"evidencia": {"referencia_seguimiento": [
+        r = self.ok("oracle_judge", {"evidencia": {"referencia_seguimiento": [
             _referencia("ausente") for _ in range(7)]}})
         m = r["medidas"][0]
         self.assertEqual((len(m["testigos"]), m["testigos_omitidos"]), (5, 2))
 
     def test_un_juicio_normal_no_trae_advertencias(self) -> None:
-        r = self.ok("oracle_juzgar", {"evidencia": {"referencia_seguimiento": [_referencia("presente")]}})
+        r = self.ok("oracle_judge", {"evidencia": {"referencia_seguimiento": [_referencia("presente")]}})
         self.assertEqual(r["advertencias"], [])
 
     def test_la_huella_es_la_de_los_argumentos_canonicos(self) -> None:
@@ -236,7 +237,7 @@ class BordesDeLaMutacionTests(Base):
                       "evidencia": {"referencia_seguimiento": [dict(_referencia("presente"), nota="ñandú")]}}
         esperada = hashlib.sha256(json.dumps(argumentos, sort_keys=True, ensure_ascii=False)
                                   .encode("utf-8")).hexdigest()
-        self.assertEqual(self.ok("oracle_juzgar", argumentos)["entrada_sha256"], esperada)
+        self.assertEqual(self.ok("oracle_judge", argumentos)["entrada_sha256"], esperada)
 
 
 class TareasTests(Base):
@@ -259,7 +260,7 @@ class TareasTests(Base):
         return redirect_stdout(io.StringIO())
 
     def test_listar_filtra_por_estado(self) -> None:
-        r = self.ok("oracle_tareas", {"accion": "listar", "estado": "CERRADA"})
+        r = self.ok("oracle_tasks", {"accion": "listar", "estado": "CERRADA"})
         self.assertEqual(r["esquema"], "oracle.mcp/tareas/v1")
         self.assertEqual(r["accion"], "listar")
         self.assertIn(self.cerrada, json.dumps(r["resultado"]))
@@ -270,35 +271,35 @@ class TareasTests(Base):
             cli.main(["--proyecto", str(self.raiz), "tarea", "nueva", "Menor",
                       "--sufijo", "menor", "--prioridad", "10"])
         # La nueva tiene el id más alto y la prioridad más baja: por id o invertido, iría primero.
-        ids = [t["id"] for t in self.ok("oracle_tareas", {"accion": "listar"})["resultado"]]
+        ids = [t["id"] for t in self.ok("oracle_tasks", {"accion": "listar"})["resultado"]]
         self.assertEqual([i.rsplit("-", 1)[1] for i in ids], ["abierta", "menor"])
 
     def test_ver_con_prefijo(self) -> None:
-        r = self.ok("oracle_tareas", {"accion": "ver", "id": self.cerrada})
+        r = self.ok("oracle_tasks", {"accion": "ver", "id": self.cerrada})
         self.assertIn("Otra que se cierra", json.dumps(r["resultado"], ensure_ascii=False))
 
     def test_ver_sin_id_es_error(self) -> None:
-        self.assertIs(self.llamar("oracle_tareas", {"accion": "ver"})["isError"], True)
+        self.assertIs(self.llamar("oracle_tasks", {"accion": "ver"})["isError"], True)
 
     def test_buscar(self) -> None:
-        r = self.ok("oracle_tareas", {"accion": "buscar", "texto": "abierta"})
+        r = self.ok("oracle_tasks", {"accion": "buscar", "texto": "abierta"})
         self.assertIn("-abierta", json.dumps(r["resultado"]))
 
     def test_hechos_trae_las_relaciones_del_tracker(self) -> None:
-        r = self.ok("oracle_tareas", {"accion": "hechos"})
+        r = self.ok("oracle_tasks", {"accion": "hechos"})
         self.assertIn("tarea_seguimiento", r["resultado"])
         self.assertEqual(len(r["resultado"]["tarea_seguimiento"]), 2)
 
     def test_no_hay_acciones_que_escriban(self) -> None:
         antes = sorted(p.name for p in (self.raiz / "tareas").iterdir())
         for accion in ("nueva", "cerrar", "anotar", "reabrir", "etiquetar"):
-            self.assertIs(self.llamar("oracle_tareas", {"accion": accion, "id": self.cerrada})
+            self.assertIs(self.llamar("oracle_tasks", {"accion": accion, "id": self.cerrada})
                           ["isError"], True, accion)
         self.assertEqual(sorted(p.name for p in (self.raiz / "tareas").iterdir()), antes)
 
     def test_sin_tracker_es_error_y_no_lista_vacia(self) -> None:
         shutil.rmtree(self.raiz / "tareas")
-        r = self.llamar("oracle_tareas", {"accion": "listar"})
+        r = self.llamar("oracle_tasks", {"accion": "listar"})
         self.assertIs(r["isError"], True)
         self.assertIn("TRACKER_AUSENTE", r["content"][0]["text"])
 

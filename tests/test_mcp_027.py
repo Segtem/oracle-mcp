@@ -16,9 +16,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from nucleo.version import VERSION_DISTRIBUCION
-from nucleo.sintaxis import imprimir
-from tools import mcp
+from oracle_metalenguaje.nucleo.version import VERSION_DISTRIBUCION
+from oracle_metalenguaje.nucleo.sintaxis import imprimir
+from oracle_mcp import server as mcp
 
 
 def _medida(mid: str, *, ambito: str = "universal", limite: int = 0,
@@ -100,8 +100,8 @@ class ContratoNormativoTests(unittest.TestCase):
     """Verifica que el bloque JSON normativo de MCP-CONTRATO.md describe exactamente 5 herramientas."""
 
     def test_tools_list_publica_las_cinco_con_el_contrato_normativo_entero(self) -> None:
-        contrato = (mcp.RAIZ / "docs" / "mcp-contrato.md").read_text(encoding="utf-8")
-        from tools.mcp_contrato import regenerar
+        contrato = (Path(__file__).resolve().parents[1] / "docs" / "contract.md").read_text(encoding="utf-8")
+        from oracle_mcp.contract import regenerar
         self.assertEqual(contrato, regenerar(contrato), "Regenerar el contrato MCP")
         bloque = re.search(
             r"<!-- herramientas-json:inicio -->\n```json\n(.*?)\n```\n"
@@ -109,7 +109,7 @@ class ContratoNormativoTests(unittest.TestCase):
             contrato,
             re.DOTALL,
         )
-        self.assertIsNotNone(bloque, "Falta el bloque de herramientas JSON en MCP-CONTRATO.md")
+        self.assertIsNotNone(bloque, "Falta el bloque de herramientas JSON en contract.md")
         esperadas = json.loads(bloque.group(1))
 
         self.assertEqual(len(esperadas), 5)
@@ -117,11 +117,11 @@ class ContratoNormativoTests(unittest.TestCase):
         self.assertEqual(
             [h["name"] for h in mcp.HERRAMIENTAS],
             [
-                "oracle_catalogo_efectivo",
-                "oracle_evaluar",
-                "oracle_desafiar",
-                "oracle_juzgar",
-                "oracle_tareas",
+                "oracle_effective_catalog",
+                "oracle_evaluate",
+                "oracle_challenge",
+                "oracle_judge",
+                "oracle_tasks",
             ],
         )
         self.assertEqual(mcp.HERRAMIENTAS, esperadas)
@@ -368,7 +368,7 @@ class JuzgarMcpTests(unittest.TestCase):
                 "id": 10,
                 "method": "tools/call",
                 "params": {
-                    "name": "oracle_juzgar",
+                    "name": "oracle_judge",
                     "arguments": {"evidencia": {"item": []}},
                 },
             })
@@ -506,7 +506,7 @@ class TareasMcpTests(unittest.TestCase):
                 "id": 20,
                 "method": "tools/call",
                 "params": {
-                    "name": "oracle_tareas",
+                    "name": "oracle_tasks",
                     "arguments": {"accion": "listar"},
                 },
             })

@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import unittest
 
-from tools import mcp
+from oracle_mcp import server as mcp
 
 
 class AnotacionesHerramientaTests(unittest.TestCase):

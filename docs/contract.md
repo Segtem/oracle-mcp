@@ -6,21 +6,21 @@
 ## Decisión
 
 El servidor expone **cinco herramientas** y es de sólo lectura respecto del proyecto:
-`oracle_catalogo_efectivo`, `oracle_evaluar`, `oracle_desafiar`, `oracle_juzgar` y `oracle_tareas`.
+`oracle_effective_catalog`, `oracle_evaluate`, `oracle_challenge`, `oracle_judge` y `oracle_tasks`.
 Las cinco reciben un proyecto fijado al arrancar el proceso; ninguna acepta una ruta de proyecto por
 llamada y ninguna crea, modifica ni borra archivos.
 
 Cinco herramientas responden a cinco preguntas distintas del agente sin mezclar costos ni autoridades:
 
-1. **¿Qué me obliga y por qué?** (`oracle_catalogo_efectivo`) Es una consulta sobre el proyecto y su
+1. **¿Qué me obliga y por qué?** (`oracle_effective_catalog`) Es una consulta sobre el proyecto y su
    jurisdicción.
-2. **¿Qué hace esta medida con esta evidencia?** (`oracle_evaluar`) Es una ejecución puntual que
+2. **¿Qué hace esta medida con esta evidencia?** (`oracle_evaluate`) Es una ejecución puntual que
    conserva valor, umbral, testigos, ausencia de evidencia y estado de sombra (con cota y perdón).
-3. **¿Qué parte del candidato todavía no está fijada?** (`oracle_desafiar`) Es un experimento de
+3. **¿Qué parte del candidato todavía no está fijada?** (`oracle_challenge`) Es un experimento de
    falsación sobre varias evidencias y los mutantes de la medida.
-4. **¿Esta evidencia cumple el catálogo efectivo entero?** (`oracle_juzgar`) Es un juicio completo
+4. **¿Esta evidencia cumple el catálogo efectivo entero?** (`oracle_judge`) Es un juicio completo
    contra el proyecto, que respeta sombras, cotas y medidas no aplicadas.
-5. **¿Cuál es el estado del tracker local?** (`oracle_tareas`) Es una lectura del seguimiento de
+5. **¿Cuál es el estado del tracker local?** (`oracle_tasks`) Es una lectura del seguimiento de
    tareas (`tareas/`) para agentes sin acceso a shell, sin permitir escrituras que romperían la
    correspondencia con Git.
 
@@ -28,7 +28,7 @@ Esta decisión contradice la inclinación de `vault-kb/planes/PLAN-0.6.0-MCP.md`
 «trae un rojo y un verde» es valiosa como experimento, pero no autoriza a llamar buena a la medida:
 las dos evidencias pueden haber sido fabricadas para repetir exactamente su error. Guardar después de
 esa compuerta agrega una escritura riesgosa, duplica una capacidad que el agente ya tiene mediante su
-editor y convierte evidencia insuficiente en una apariencia de aprobación. `oracle_desafiar` conserva
+editor y convierte evidencia insuficiente en una apariencia de aprobación. `oracle_challenge` conserva
 la parte nueva —evaluar ambas polaridades y mutar sin persistir— sin hacer esa promesa.
 
 El plan también describe `oracle_contexto` como respuesta correcta a «qué medidas aplican a este
@@ -80,14 +80,14 @@ esquemas cierran propiedades con `additionalProperties: false`: un error de nomb
 Los campos opcionales de una medida sólo aparecen en modo detalle; el servidor valida como
 poscondición que `detalle: true` implique que todos estén presentes.
 
-El bloque siguiente se genera desde `tools.mcp.HERRAMIENTAS` con
-`python3 -m tools.mcp_contrato` (verificar con `--check`).
+El bloque siguiente se genera desde `oracle_mcp.server.HERRAMIENTAS` con
+`python3 -m oracle_mcp.contract` (verificar con `--check`).
 
 <!-- herramientas-json:inicio -->
 ```json
 [
   {
-    "name": "oracle_catalogo_efectivo",
+    "name": "oracle_effective_catalog",
     "title": "Catálogo efectivo de Oracle",
     "description": "Consulta medidas efectivas del proyecto fijado. Sin ids: índice; con ids: detalle. No evalúa evidencia.",
     "annotations": {
@@ -236,7 +236,7 @@ El bloque siguiente se genera desde `tools.mcp.HERRAMIENTAS` con
     }
   },
   {
-    "name": "oracle_evaluar",
+    "name": "oracle_evaluate",
     "title": "Evaluar una medida en memoria",
     "description": "Evalúa una medida efectiva por id o texto sin guardar contra evidencia JSON. Distingue verde, rojo y sin_evidencia; incluye umbral, testigos y alcance. No demuestra corrección de la medida.",
     "annotations": {
@@ -440,7 +440,7 @@ El bloque siguiente se genera desde `tools.mcp.HERRAMIENTAS` con
     }
   },
   {
-    "name": "oracle_desafiar",
+    "name": "oracle_challenge",
     "title": "Desafiar una medida con corpus y mutación",
     "description": "Desafía por id o texto con corpus y diferenciales opcionales y casos efímeros. Exige ambas polaridades y muta; informa discordancias, sobrevivientes y rechazos. No demuestra corrección semántica.",
     "annotations": {
@@ -702,7 +702,7 @@ El bloque siguiente se genera desde `tools.mcp.HERRAMIENTAS` con
     }
   },
   {
-    "name": "oracle_juzgar",
+    "name": "oracle_judge",
     "title": "Juzgar evidencia contra el catálogo efectivo",
     "description": "Juzga evidencia contra el catálogo efectivo (ids selecciona un subconjunto). Informa no aplicadas, sombras y cotas. ok exige medidas satisfechas y sombras dentro de cota; no ejecuta escalares no autorizadas.",
     "annotations": {
@@ -934,7 +934,7 @@ El bloque siguiente se genera desde `tools.mcp.HERRAMIENTAS` con
     }
   },
   {
-    "name": "oracle_tareas",
+    "name": "oracle_tasks",
     "title": "Consultar el tracker de tareas del proyecto",
     "description": "Lee tareas/: listar sin cuerpos; ver por id o sufijo/prefijo con cuerpo completo; buscar texto o extraer hechos. Sin tracker: TRACKER_AUSENTE.",
     "annotations": {
@@ -1027,7 +1027,7 @@ El bloque siguiente se genera desde `tools.mcp.HERRAMIENTAS` con
 ```
 <!-- herramientas-json:fin -->
 
-### `oracle_catalogo_efectivo`
+### `oracle_effective_catalog`
 
 Sin `ids`, devuelve una fila compacta por cada medida del `Catalogo` producido por
 `catalogo_efectivo`: id, origen lógico y estado de fijación. `total` es el
@@ -1070,7 +1070,7 @@ La capacidad nueva no es «listar medidas en JSON». Es exponer, con procedencia
 selección de jurisdicción que hoy sólo existe como función de núcleo. `oracle medida listar` y
 `oracle contexto` cargan fuentes; no contestan esa selección.
 
-### `oracle_evaluar`
+### `oracle_evaluate`
 
 `medida` es una unión cerrada. `{"id": ...}` sólo admite una medida del catálogo efectivo;
 `{"texto": ..., "formato": "oracle"}` carga una medida enteramente en memoria. No se
@@ -1114,7 +1114,7 @@ La capacidad nueva es que tanto la medida como la evidencia pueden llegar por va
 resultado es estructurado. El CLI exige que la medida ya exista como archivo y devuelve texto. Esto
 permite explorar sin ensuciar el árbol y sin parsear una salida pensada para personas.
 
-### `oracle_desafiar`
+### `oracle_challenge`
 
 Esta herramienta acepta la misma unión de medida. Si `usar_evidencia_del_proyecto` se omite, vale
 verdadero: reúne los casos del corpus y los diferenciales cuyo `medida` coincide con el id del
@@ -1149,7 +1149,7 @@ La capacidad nueva es ejecutar el lazo candidato efímero → dos polaridades �
 medida ni los casos existan en disco. Ni `oracle medida revisar`, ni `oracle medida probar`, ni
 `oracle caso generar` hacen esa composición en memoria.
 
-### `oracle_juzgar`
+### `oracle_judge`
 
 Lo mismo que `oracle juzgar --con`, sobre una evidencia JSON pasada por valor.
 
@@ -1165,15 +1165,15 @@ explicativa; nunca devuelve un verde vacío.
 
 Si se indica `ids` y alguna de las medidas pedidas no existe en el catálogo o no aplica a la
 evidencia provista, la herramienta falla cerrado con error de dominio (`MEDIDA_DESCONOCIDA`,
-`MEDIDA_NO_EFECTIVA` o `MEDIDA_NO_APLICABLE`), de modo análogo a `oracle_evaluar`.
+`MEDIDA_NO_EFECTIVA` o `MEDIDA_NO_APLICABLE`), de modo análogo a `oracle_evaluate`.
 
 La salida (esquema `oracle.mcp/juzgar/v1`) incluye: `esquema`, `oracle_version`, `proyecto`,
 `entrada_sha256`, `ok`, `medidas` (con `estado`, `valor`, `umbral`, `sombra`, `testigos`,
 `testigos_omitidos` y `alcance`), `no_aplicadas`, `no_juzgaron` y `advertencias`. Conserva la misma
-protección de concurrencia que `oracle_evaluar` (`_evaluacion_estable`): si el proyecto cambia
+protección de concurrencia que `oracle_evaluate` (`_evaluacion_estable`): si el proyecto cambia
 durante el juicio, rechaza con `PROYECTO_CAMBIO_DURANTE_LA_CONSULTA`.
 
-### `oracle_tareas`
+### `oracle_tasks`
 
 Permite que un agente sin acceso a shell consulte el tracker de tareas (`tareas/`) del proyecto.
 
@@ -1226,7 +1226,7 @@ Los códigos de dominio cerrados son:
 | `CATALOGO_INVALIDO` | una fuente seleccionada no carga, hay ids duplicados o versiones incompatibles | `CATALOGO_INVALIDO — <fuente>: <motivo de carga>. No se devolvió un catálogo parcial.` |
 | `MEDIDA_DESCONOCIDA` | el id no aparece en fuentes seleccionadas | `MEDIDA_DESCONOCIDA — «<id>» no aparece en las fuentes seleccionadas; consultá oracle_catalogo_efectivo sin ids.` |
 | `MEDIDA_NO_EFECTIVA` | el id existe pero su ámbito no obliga aquí | `MEDIDA_NO_EFECTIVA — «<id>» existe en <origen>, pero su ambito «<ambito>» no obliga a «<proyecto>».` |
-| `MEDIDA_NO_APLICABLE` | el id pedido en `oracle_juzgar` no aplica a las relaciones de la evidencia | `MEDIDA_NO_APLICABLE — «<id>» requiere las relaciones <relaciones>, no presentes en la evidencia.` |
+| `MEDIDA_NO_APLICABLE` | el id pedido en `oracle_judge` no aplica a las relaciones de la evidencia | `MEDIDA_NO_APLICABLE — «<id>» requiere las relaciones <relaciones>, no presentes en la evidencia.` |
 | `MEDIDA_INVALIDA` | el texto no parsea o no satisface `Medida.de_datos` | `MEDIDA_INVALIDA — <id o texto>: <motivo> en <línea y columna o ruta canónica>.` |
 | `EVIDENCIA_INVALIDA` | una relación no es una lista de objetos o una fila no es evaluable | `EVIDENCIA_INVALIDA — $.evidencia.<relación>[<índice>]: <motivo>.` |
 | `EVIDENCIA_INCOMPLETA` | falta la medida jueza, un fixture está vencido o no se pudo reunir todo lo que exige un juicio de fijación | `EVIDENCIA_INCOMPLETA — no se pudo juzgar la fijación: <motivo>. No se devolvieron fijaciones parciales.` |
@@ -1234,8 +1234,8 @@ Los códigos de dominio cerrados son:
 | `ESCALARES_NO_AUTORIZADAS` | haría falta ejecutar `escalares.py` no confiado | `ESCALARES_NO_AUTORIZADAS — <archivo> es código externo; autorizalo en la configuración de arranque del servidor, no en esta llamada.` |
 | `TRACKER_AUSENTE` | el proyecto no tiene directorio `tareas/` | `TRACKER_AUSENTE — el proyecto no tiene tracker de tareas: falta <ruta tareas>.` |
 | `TRACKER_INVALIDO` | el directorio `tareas/` contiene registros inválidos, documentos centrales corruptos o enlaces simbólicos | `TRACKER_INVALIDO — se detectaron <N> registro(s) inválido(s) en <ruta tareas>:` |
-| `TAREA_NO_ENCONTRADA` | el id o prefijo pedido en `oracle_tareas ver` no existe | `TAREA_NO_ENCONTRADA — no se encontró ninguna tarea con prefijo «<id>».` |
-| `ID_AMBIGUO` | el prefijo pedido en `oracle_tareas ver` coincide con más de una tarea | `ID_AMBIGUO — el prefijo «<prefijo>» coincide con <N> tareas: <ids>.` |
+| `TAREA_NO_ENCONTRADA` | el id o prefijo pedido en `oracle_tasks ver` no existe | `TAREA_NO_ENCONTRADA — no se encontró ninguna tarea con prefijo «<id>».` |
+| `ID_AMBIGUO` | el prefijo pedido en `oracle_tasks ver` coincide con más de una tarea | `ID_AMBIGUO — el prefijo «<prefijo>» coincide con <N> tareas: <ids>.` |
 | `LIMITE_DE_ALGEBRA` | se excede un presupuesto de `LimitesAlgebra` | `LIMITE_DE_ALGEBRA — <nombre>: se observó <valor> y el límite activo es <límite>.` |
 | `PROYECTO_CAMBIO_DURANTE_LA_CONSULTA` | el conjunto o contenido de entradas cambió durante la operación | `PROYECTO_CAMBIO_DURANTE_LA_CONSULTA — huella inicial <sha> y final <sha>; reintentá sobre un estado estable.` |
 | `EVALUACION_FALLO` | excepción no clasificable de una medida o escalar | `EVALUACION_FALLO — <tipo de excepción>: <mensaje>. No se produjo un veredicto.` |
@@ -1281,17 +1281,17 @@ La exclusión se decide por capacidad, no por cantidad:
 | Superficie del CLI | Por qué no es una herramienta MCP |
 |---|---|
 | `medida nueva`, `caso nuevo`, `proyecto init`, `biblioteca nueva` | Crean plantillas o árboles. El agente ya sabe editar archivos y el MCP no sabe más que él al hacerlo. |
-| `medida revisar`, `medida probar` | Sus partes nuevas quedan subsumidas por entrada enteramente en memoria y salida estructurada de `oracle_evaluar` y `oracle_desafiar`; envolver el archivo y el texto de consola no alcanza. |
+| `medida revisar`, `medida probar` | Sus partes nuevas quedan subsumidas por entrada enteramente en memoria y salida estructurada de `oracle_evaluate` y `oracle_challenge`; envolver el archivo y el texto de consola no alcanza. |
 | `medida listar` | Lista fuentes cargadas, no el catálogo efectivo por ámbito. La herramienta se justifica sólo por corregir esa pregunta mediante `catalogo_efectivo`. |
 | `medida expandir`, `convertir` | Son transformaciones de representación que el CLI ya hace de modo determinista. No agregan observación ni falsación. |
 | `caso listar` | Es un listado de archivos ya accesibles. El desafío usa esos casos sin obligar al agente a parsear la vista. |
-| `caso generar` | Propone evidencia a partir de sobrevivientes y puede escribirla; `oracle_desafiar` devuelve el sobreviviente crudo. Inventar el caso sigue requiriendo juicio, no otra envoltura. |
+| `caso generar` | Propone evidencia a partir de sobrevivientes y puede escribirla; `oracle_challenge` devuelve el sobreviviente crudo. Inventar el caso sigue requiriendo juicio, no otra envoltura. |
 | `proyecto test` | Es una orquestación larga disponible por consola. Ocultarla detrás de una llamada síncrona empeora progreso, cancelación y alcance sin crear una comprobación nueva. |
 | `proyecto relaciones`, `proyecto escalares`, `proyecto contexto` | Ya son vistas compactas y el agente puede pedirlas por CLI. MCP no las vuelve nuevas por serializarlas. Las relaciones consumidas que hacen falta para entender jurisdicción sí viajan en el índice efectivo. |
 | `biblioteca instaladas`, `biblioteca verificar`, `biblioteca listar` | Son administración e inspección del entorno de paquetes, no una pregunta sobre la medición actual. Además aceptar una ruta de biblioteca ampliaría la autoridad fijada al arrancar. |
 | `manual` y sus ocho temas | Son referencia derivada y estable. Meterla como herramienta cobraría descripciones en cada turno para devolver texto que ya se puede leer sin ejecución. |
 | `diagnostico`, ayuda y versión | Son soporte de la instalación. La versión necesaria ya acompaña cada resultado; el resto no participa de decidir ni medir. |
-| `tarea nueva`, `tarea anotar`, `tarea cerrar`, `tarea etiquetar`, `tarea adjuntar` | Son operaciones de escritura del tracker. Modificar o cerrar una tarea sin su commit correspondiente deja el tracker en rojo, y el commit pertenece al control de versiones fuera de MCP. La consulta de sólo lectura se expone en `oracle_tareas`. |
+| `tasks new`, `tasks note`, `tasks close`, `tasks tag`, `tasks attach` | Son operaciones de escritura del tracker. Modificar o cerrar una tarea sin su commit correspondiente deja el tracker en rojo, y el commit pertenece al control de versiones fuera de MCP. La consulta de sólo lectura se expone en `oracle_tasks`. |
 
 No se expone `oracle_proponer`. Su ausencia es deliberada, no una fase pendiente de esta superficie.
 Si en otra versión se quisiera escritura, tendría que responder una capacidad nueva propia —por
@@ -1399,7 +1399,7 @@ from nucleo.version import VERSION_DISTRIBUCION
 from tools.medida import alcance_derivado,ejercicio_del_catalogo
 H=lambda x:hashlib.sha256(json.dumps(x,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 E=lambda v:'sin_evidencia' if v.sin_evidencia else ('verde' if v.ok else 'rojo')
-doc=Path('docs/mcp-contrato.md').read_text(); defs=json.loads(re.search(r'<!-- herramientas-json:inicio -->\n```json\n(.*?)\n```\n<!-- herramientas-json:fin -->',doc,re.S).group(1))
+doc=Path('docs/contract.md').read_text(); defs=json.loads(re.search(r'<!-- herramientas-json:inicio -->\n```json\n(.*?)\n```\n<!-- herramientas-json:fin -->',doc,re.S).group(1))
 p=Proyecto(Path.cwd()); cat=catalogo_efectivo(p); ej=ejercicio_del_catalogo(p,cat,macros_del_proyecto(p)); assert ej.hubo_jueza and ej.completa; hp=hashlib.sha256()
 archivos={x.ruta.resolve() for x in cat.entradas.values()}|{x.resolve() for d in ('corpus','diferencial','macros') for x in (p.raiz/d).rglob('*') if x.is_file()}|({(p.raiz/'oracle.json').resolve()} if (p.raiz/'oracle.json').is_file() else set())
 for ruta in sorted(archivos): hp.update(str(ruta).encode()+b'\0'+ruta.read_bytes()+b'\0')
@@ -1459,7 +1459,7 @@ presenta ninguna como suficiente:
 
 1. **Una sola autoridad semántica por afirmación.** La jurisdicción sale de
    `catalogo_efectivo`; el estado puntual sale de `Veredicto`; el ejercicio sale de la medida meta;
-   la mutación sale de `nucleo.mutacion.correr`. El adaptador proyecta datos, no reescribe reglas.
+   la mutación sale de `oracle_metalenguaje.nucleo.mutacion.correr`. El adaptador proyecta datos, no reescribe reglas.
 2. **Fallo cerrado.** Catálogo, corpus o diferenciales ilegibles producen `isError`; nunca una lista
    vacía, un verde o una ronda sin sobrevivientes.
 3. **Datos que permiten reconciliar.** Se devuelve valor junto con umbral, testigos junto con su
@@ -1476,8 +1476,8 @@ adivinarlo. Si una mutación que reemplaza `catalogo_efectivo` por `catalogos_a_
 `sin_evidencia` por `rojo`, cuenta un rechazo del álgebra como detección conductual o traga una
 excepción sigue dejando verde el corpus MCP, el servidor no está verificado.
 
-Las respuestas tampoco deben usar lenguaje que exceda sus datos. `oracle_evaluar` dice lo que
-ocurrió con una evidencia; `oracle_desafiar`, qué mutaciones discriminó un conjunto. Ninguna dice que
+Las respuestas tampoco deben usar lenguaje que exceda sus datos. `oracle_evaluate` dice lo que
+ocurrió con una evidencia; `oracle_challenge`, qué mutaciones discriminó un conjunto. Ninguna dice que
 el mundo está bien, que la procedencia es observada o que el candidato debe guardarse. Reducir la
 fuerza de la afirmación no arregla un cálculo equivocado, pero evita que un cálculo correcto se vuelva
 una conclusión falsa al cruzar el transporte.
