@@ -26,38 +26,20 @@ El servidor se comunica a través de `stdio`. Al iniciarlo se especifica la raí
 
 ### Claude Code
 
-Configurá el servidor en tu archivo de configuración de Claude Code (por ejemplo en `~/.claude/claude.json` o a nivel de proyecto):
-
-```json
-{
-  "mcpServers": {
-    "oracle": {
-      "command": "oracle-mcp",
-      "args": ["--proyecto", "."]
-    }
-  }
-}
-```
-
-O agregalo mediante el CLI:
+Desde la raíz del proyecto:
 
 ```bash
-claude mcp add oracle oracle-mcp -- --proyecto .
+claude mcp add oracle -- oracle-mcp --proyecto .
 ```
 
 ### Codex
 
-En la configuración de MCP de Codex:
+En `~/.codex/config.toml`:
 
-```json
-{
-  "mcpServers": {
-    "oracle": {
-      "command": "oracle-mcp",
-      "args": ["--proyecto", "."]
-    }
-  }
-}
+```toml
+[mcp_servers.oracle]
+command = "oracle-mcp"
+args = ["--proyecto", "/ruta/al/proyecto"]
 ```
 
 ## Herramientas disponibles
