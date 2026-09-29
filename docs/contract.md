@@ -5,8 +5,9 @@
 
 ## Decisión
 
-El servidor expone **cinco herramientas** y es de sólo lectura respecto del proyecto:
-`oracle_effective_catalog`, `oracle_evaluate`, `oracle_challenge`, `oracle_judge` y `oracle_tasks`.
+El servidor expone **seis herramientas** y es de sólo lectura respecto del proyecto:
+`oracle_effective_catalog`, `oracle_evaluate`, `oracle_challenge`, `oracle_judge`, `oracle_tasks` y
+`oracle_requirements`.
 Las cinco reciben un proyecto fijado al arrancar el proceso; ninguna acepta una ruta de proyecto por
 llamada y ninguna crea, modifica ni borra archivos.
 
@@ -23,6 +24,10 @@ Cinco herramientas responden a cinco preguntas distintas del agente sin mezclar 
 5. **¿Cuál es el estado del tracker local?** (`oracle_tasks`) Es una lectura del seguimiento de
    tareas (`tareas/`) para agentes sin acceso a shell, sin permitir escrituras que romperían la
    correspondencia con Git.
+6. **¿Qué promesas del proyecto mide alguna medida?** (`oracle_requirements`, desde 0.1.1) Es la
+   cobertura de `requisitos/*.requisito` que imprime `oracle cobertura`, como datos: cada requisito
+   medido, en parte o sin medir, las medidas que nombra sin que existan y las medidas propias que no
+   cubren ninguno. No evalúa evidencia.
 
 Esta decisión contradice la inclinación de `vault-kb/planes/PLAN-0.6.0-MCP.md` hacia `oracle_proponer`. La compuerta
 «trae un rojo y un verde» es valiosa como experimento, pero no autoriza a llamar buena a la medida:
@@ -50,7 +55,7 @@ puede autorizarlo al configurar el servidor con `--confiar-escalares`; una llama
 concederse esa confianza a sí misma. Cuando una operación necesita una escalar no autorizada, falla
 con `ESCALARES_NO_AUTORIZADAS`, no carga un catálogo parcial y no devuelve una lista vacía.
 
-Las cinco herramientas llevan las anotaciones `readOnlyHint: true`, `destructiveHint: false`,
+Las seis herramientas llevan las anotaciones `readOnlyHint: true`, `destructiveHint: false`,
 `idempotentHint: true` y `openWorldHint: false`. Son pistas para el anfitrión, no controles de
 seguridad; el control real es que el despachador no tenga ningún camino de escritura y que la raíz
 no sea parte de los argumentos.
@@ -1022,6 +1027,133 @@ El bloque siguiente se genera desde `oracle_mcp.server.HERRAMIENTAS` con
         }
       }
     }
+  },
+  {
+    "name": "oracle_requirements",
+    "title": "Cobertura de requisitos",
+    "description": "Lee requisitos/*.requisito: qué promesas mide alguna medida, cuáles en parte y cuáles no, y qué medidas no cubren ninguna. No evalúa evidencia.",
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "esquema",
+        "oracle_version",
+        "proyecto",
+        "totales",
+        "requisitos",
+        "medidas_sin_requisito"
+      ],
+      "properties": {
+        "esquema": {
+          "const": "oracle.mcp/requisitos/v1"
+        },
+        "oracle_version": {
+          "type": "string"
+        },
+        "proyecto": {
+          "type": "string"
+        },
+        "totales": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requisitos",
+            "total",
+            "parcial",
+            "ninguna",
+            "con_medidas_inexistentes"
+          ],
+          "properties": {
+            "requisitos": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "parcial": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ninguna": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "con_medidas_inexistentes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "requisitos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "texto",
+              "fuente",
+              "cobertura",
+              "medido_por",
+              "sin_medir",
+              "medidas_inexistentes"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "texto": {
+                "type": "string"
+              },
+              "fuente": {
+                "type": "string"
+              },
+              "cobertura": {
+                "enum": [
+                  "total",
+                  "parcial",
+                  "ninguna"
+                ]
+              },
+              "medido_por": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "sin_medir": {
+                "type": "string"
+              },
+              "medidas_inexistentes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "medidas_sin_requisito": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
   }
 ]
 ```
@@ -1236,6 +1368,7 @@ Los códigos de dominio cerrados son:
 | `TRACKER_INVALIDO` | el directorio `tareas/` contiene registros inválidos, documentos centrales corruptos o enlaces simbólicos | `TRACKER_INVALIDO — se detectaron <N> registro(s) inválido(s) en <ruta tareas>:` |
 | `TAREA_NO_ENCONTRADA` | el id o prefijo pedido en `oracle_tasks ver` no existe | `TAREA_NO_ENCONTRADA — no se encontró ninguna tarea con prefijo «<id>».` |
 | `ID_AMBIGUO` | el prefijo pedido en `oracle_tasks ver` coincide con más de una tarea | `ID_AMBIGUO — el prefijo «<prefijo>» coincide con <N> tareas: <ids>.` |
+| `REQUISITO_INVALIDO` | un `.requisito` no carga en `oracle_requirements` | `REQUISITO_INVALIDO — <ruta>: <motivo>. No se devolvió una cobertura parcial.` |
 | `LIMITE_DE_ALGEBRA` | se excede un presupuesto de `LimitesAlgebra` | `LIMITE_DE_ALGEBRA — <nombre>: se observó <valor> y el límite activo es <límite>.` |
 | `PROYECTO_CAMBIO_DURANTE_LA_CONSULTA` | el conjunto o contenido de entradas cambió durante la operación | `PROYECTO_CAMBIO_DURANTE_LA_CONSULTA — huella inicial <sha> y final <sha>; reintentá sobre un estado estable.` |
 | `EVALUACION_FALLO` | excepción no clasificable de una medida o escalar | `EVALUACION_FALLO — <tipo de excepción>: <mensaje>. No se produjo un veredicto.` |

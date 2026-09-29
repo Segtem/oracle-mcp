@@ -75,14 +75,14 @@ class Base(unittest.TestCase):
 
 
 class ListaTests(Base):
-    def test_cinco_herramientas_todas_de_solo_lectura(self) -> None:
+    def test_seis_herramientas_todas_de_solo_lectura(self) -> None:
         salida = io.BytesIO()
         mcp.servir(mcp.Proyecto(self.raiz), io.BytesIO(_conversacion(
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})), salida)
         herramientas = _desenmarcar(salida.getvalue())[1]["result"]["tools"]
         self.assertEqual(sorted(h["name"] for h in herramientas),
                          ["oracle_challenge", "oracle_effective_catalog", "oracle_evaluate",
-                          "oracle_judge", "oracle_tasks"])
+                          "oracle_judge", "oracle_requirements", "oracle_tasks"])
         for h in herramientas:
             self.assertEqual(h["annotations"], SOLO_LECTURA, h["name"])
 

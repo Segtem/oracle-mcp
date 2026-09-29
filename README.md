@@ -44,7 +44,7 @@ args = ["--proyecto", "/ruta/al/proyecto"]
 
 ## Herramientas disponibles
 
-El servidor expone exactamente cinco herramientas de sólo lectura:
+El servidor expone exactamente seis herramientas de sólo lectura:
 
 | Herramienta | Qué hace |
 |---|---|
@@ -53,6 +53,7 @@ El servidor expone exactamente cinco herramientas de sólo lectura:
 | `oracle_challenge` | Desafía una medida por id o texto contra casos de corpus y efímeros. Exige ambas polaridades y corre mutantes algebraicos para reportar discordancias y sobrevivientes sin tocar el disco. |
 | `oracle_judge` | Juzga evidencia JSON contra el catálogo efectivo del proyecto (o un subconjunto de `ids`). Evalúa cumplimiento de reglas, aplica sombras con cotas e informa medidas no aplicadas. |
 | `oracle_tasks` | Lee el tracker de tareas (`tareas/`) del proyecto para agentes sin acceso a terminal: listar tareas abiertas o cerradas por estado o etiqueta, ver detalle y notas de una tarea por id o prefijo, buscar texto o extraer hechos relacionales. |
+| `oracle_requirements` | La cobertura de `requisitos/*.requisito` (Oracle 0.35.0): qué promesas mide alguna medida, cuáles en parte y cuáles no, las medidas que un requisito nombra sin que existan y las medidas que no cubren ninguno. |
 
 ## Contrato
 

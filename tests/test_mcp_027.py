@@ -97,9 +97,9 @@ def _inicializar_tracker(raiz: Path) -> Path:
 
 
 class ContratoNormativoTests(unittest.TestCase):
-    """Verifica que el bloque JSON normativo de MCP-CONTRATO.md describe exactamente 5 herramientas."""
+    """Verifica que el bloque JSON normativo de MCP-CONTRATO.md describe exactamente 6 herramientas."""
 
-    def test_tools_list_publica_las_cinco_con_el_contrato_normativo_entero(self) -> None:
+    def test_tools_list_publica_las_seis_con_el_contrato_normativo_entero(self) -> None:
         contrato = (Path(__file__).resolve().parents[1] / "docs" / "contract.md").read_text(encoding="utf-8")
         from oracle_mcp.contract import regenerar
         self.assertEqual(contrato, regenerar(contrato), "Regenerar el contrato MCP")
@@ -112,8 +112,8 @@ class ContratoNormativoTests(unittest.TestCase):
         self.assertIsNotNone(bloque, "Falta el bloque de herramientas JSON en contract.md")
         esperadas = json.loads(bloque.group(1))
 
-        self.assertEqual(len(esperadas), 5)
-        self.assertEqual(len(mcp.HERRAMIENTAS), 5)
+        self.assertEqual(len(esperadas), 6)
+        self.assertEqual(len(mcp.HERRAMIENTAS), 6)
         self.assertEqual(
             [h["name"] for h in mcp.HERRAMIENTAS],
             [
@@ -122,6 +122,7 @@ class ContratoNormativoTests(unittest.TestCase):
                 "oracle_challenge",
                 "oracle_judge",
                 "oracle_tasks",
+                "oracle_requirements",
             ],
         )
         self.assertEqual(mcp.HERRAMIENTAS, esperadas)

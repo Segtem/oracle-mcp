@@ -634,12 +634,58 @@ HERRAMIENTA_TAREAS = {
     },
 }
 
+HERRAMIENTA_REQUISITOS = {
+    "name": "oracle_requirements",
+    "title": "Cobertura de requisitos",
+    "description": "Lee requisitos/*.requisito: qué promesas mide alguna medida, cuáles en parte y cuáles no, y qué medidas no cubren ninguna. No evalúa evidencia.",
+    "annotations": deepcopy(_ANOTACIONES),
+    "inputSchema": {"type": "object", "additionalProperties": False, "properties": {}},
+    "outputSchema": {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["esquema", "oracle_version", "proyecto", "totales", "requisitos",
+                     "medidas_sin_requisito"],
+        "properties": {
+            "esquema": {"const": "oracle.mcp/requisitos/v1"},
+            "oracle_version": {"type": "string"},
+            "proyecto": {"type": "string"},
+            "totales": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["requisitos", "total", "parcial", "ninguna", "con_medidas_inexistentes"],
+                "properties": {clave: {"type": "integer", "minimum": 0} for clave in (
+                    "requisitos", "total", "parcial", "ninguna", "con_medidas_inexistentes")},
+            },
+            "requisitos": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["id", "texto", "fuente", "cobertura", "medido_por", "sin_medir",
+                                 "medidas_inexistentes"],
+                    "properties": {
+                        "id": {"type": "string"},
+                        "texto": {"type": "string"},
+                        "fuente": {"type": "string"},
+                        "cobertura": {"enum": ["total", "parcial", "ninguna"]},
+                        "medido_por": {"type": "array", "items": {"type": "string"}},
+                        "sin_medir": {"type": "string"},
+                        "medidas_inexistentes": {"type": "array", "items": {"type": "string"}},
+                    },
+                },
+            },
+            "medidas_sin_requisito": {"type": "array", "items": {"type": "string"}},
+        },
+    },
+}
+
 HERRAMIENTAS = [
     HERRAMIENTA_CATALOGO,
     HERRAMIENTA_EVALUAR,
     HERRAMIENTA_DESAFIAR,
     HERRAMIENTA_JUZGAR,
     HERRAMIENTA_TAREAS,
+    HERRAMIENTA_REQUISITOS,
 ]
 
 
@@ -1734,6 +1780,52 @@ def _validar_tareas(argumentos) -> dict:
     return argumentos
 
 
+def requisitos_para_mcp(proy: Proyecto, argumentos, *, confiar_escalares: bool = False) -> dict:
+    """La cobertura que imprime `oracle cobertura`, como datos. Un requisito que no carga es un error
+    entero: una lista a la que le falta uno se leería como la cobertura completa."""
+    from oracle_metalenguaje.nucleo.proyecto import ORIGEN_PROYECTO
+    from oracle_metalenguaje.nucleo.requisito import RequisitoMalDeclarado, cargar_requisitos
+
+    if argumentos not in (None, {}):
+        raise ErrorHerramienta("ARGUMENTOS_INVALIDOS", "oracle_requirements no recibe argumentos.")
+    try:
+        requisitos = cargar_requisitos(proy.raiz / "requisitos")
+    except RequisitoMalDeclarado as e:
+        raise ErrorHerramienta("REQUISITO_INVALIDO", f"{e}. No se devolvió una cobertura parcial.") from e
+    try:
+        with escalares_del_proyecto(proy, confiar=confiar_escalares):
+            catalogo = catalogo_efectivo(proy, macros=macros_del_proyecto(proy))
+    except EscalaresNoConfiables as e:
+        _rechazar_escalares(e)
+    except ProyectoInvalido as e:
+        raise ErrorHerramienta("PROYECTO_INVALIDO", f"{proy.raiz.resolve()}: {e}.") from e
+    except Exception as e:
+        raise _error_catalogo(proy, e) from e
+
+    filas, usadas = [], set()
+    for r in requisitos.values():
+        usadas.update(r.medido_por)
+        filas.append({
+            "id": r.id, "texto": r.texto, "fuente": r.fuente, "cobertura": r.cobertura,
+            "medido_por": list(r.medido_por), "sin_medir": r.sin_medir,
+            "medidas_inexistentes": [m for m in r.medido_por if m not in catalogo],
+        })
+    return {
+        "esquema": "oracle.mcp/requisitos/v1",
+        "oracle_version": VERSION_DISTRIBUCION,
+        "proyecto": str(proy.raiz.resolve()),
+        "totales": {
+            "requisitos": len(filas),
+            **{c: sum(f["cobertura"] == c for f in filas) for c in ("total", "parcial", "ninguna")},
+            "con_medidas_inexistentes": sum(bool(f["medidas_inexistentes"]) for f in filas),
+        },
+        "requisitos": filas,
+        "medidas_sin_requisito": sorted(
+            mid for mid, e in catalogo.entradas.items()
+            if e.origen == ORIGEN_PROYECTO and mid not in usadas),
+    }
+
+
 def tareas_para_mcp(proy: Proyecto, argumentos) -> dict:
     validos = _validar_tareas(argumentos)
     accion = validos["accion"]
@@ -1847,6 +1939,9 @@ class Servidor:
             elif nombre == HERRAMIENTA_TAREAS["name"]:
                 contenido = tareas_para_mcp(
                     self.proy, argumentos)
+            elif nombre == HERRAMIENTA_REQUISITOS["name"]:
+                contenido = requisitos_para_mcp(
+                    self.proy, argumentos, confiar_escalares=self.confiar_escalares)
             else:
                 contenido = evaluar_para_mcp(
                     self.proy, argumentos, confiar_escalares=self.confiar_escalares)
