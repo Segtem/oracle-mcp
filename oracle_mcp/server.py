@@ -38,11 +38,11 @@ from oracle_metalenguaje.tools.juzgar import (  # noqa: E402
 from oracle_metalenguaje.tools.medida import (  # noqa: E402
     ejercicio_del_catalogo, relaciones_por_alias)
 from oracle_metalenguaje.tools.sesion import resolver_cli  # noqa: E402
-from trackertast.tasks import (  # noqa: E402
+from oracle_task.tasks import (  # noqa: E402
     IdAmbiguo, RutaInsegura, TareaError, TareaInvalida, TareaNoEncontrada,
     auditar_tareas, filtrar_tareas, leer_tarea)
-from trackertast.context import buscar_en_tracker  # noqa: E402
-from trackertast.facts import extraer_hechos  # noqa: E402
+from oracle_task.context import buscar_en_tracker  # noqa: E402
+from oracle_task.facts import extraer_hechos  # noqa: E402
 
 
 PROTOCOLO = "2025-11-25"

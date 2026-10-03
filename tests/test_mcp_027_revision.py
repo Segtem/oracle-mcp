@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 
 from tests.test_mcp import _conversacion, _desenmarcar
-from oracle_metalenguaje.tools import cli
+from oracle_task import cli
 from oracle_mcp import server as mcp
 
 RAIZ = Path(__file__).resolve().parents[1]
@@ -244,15 +244,15 @@ class TareasTests(Base):
     def setUp(self) -> None:
         super().setUp()
         with io.StringIO() as _, self._silencio():
-            cli.main(["--proyecto", str(self.raiz), "tarea", "init"])
-            cli.main(["--proyecto", str(self.raiz), "tarea", "nueva", "Una tarea abierta",
+            cli.main(["--proyecto", str(self.raiz), "init"])
+            cli.main(["--proyecto", str(self.raiz), "nueva", "Una tarea abierta",
                       "--sufijo", "abierta", "--etiqueta", "rojo"])
-            cli.main(["--proyecto", str(self.raiz), "tarea", "nueva", "Otra que se cierra",
+            cli.main(["--proyecto", str(self.raiz), "nueva", "Otra que se cierra",
                       "--sufijo", "cerrada"])
         self.cerrada = next(p.name for p in (self.raiz / "tareas").iterdir()
                             if p.name.endswith("-cerrada"))
         with self._silencio():
-            cli.main(["--proyecto", str(self.raiz), "tarea", "cerrar", self.cerrada])
+            cli.main(["--proyecto", str(self.raiz), "cerrar", self.cerrada])
 
     @staticmethod
     def _silencio():
@@ -268,7 +268,7 @@ class TareasTests(Base):
 
     def test_listar_ordena_por_prioridad_y_sin_filtro_trae_las_abiertas(self) -> None:
         with self._silencio():
-            cli.main(["--proyecto", str(self.raiz), "tarea", "nueva", "Menor",
+            cli.main(["--proyecto", str(self.raiz), "nueva", "Menor",
                       "--sufijo", "menor", "--prioridad", "10"])
         # La nueva tiene el id más alto y la prioridad más baja: por id o invertido, iría primero.
         ids = [t["id"] for t in self.ok("oracle_tasks", {"accion": "listar"})["resultado"]]
