@@ -1,6 +1,6 @@
 # Migrar a Oracle Task 0.2.0
 
-- ESTADO: ABIERTA
+- ESTADO: CERRADA
 - PRIORIDAD: 50
 - ETIQUETAS: 
 
@@ -21,7 +21,10 @@ Imports oracle_task y dependencia oracle-task==0.2.0. Los fixtures de tareas usa
 
 Main empujado, tag v0.1.2 y release GitHub publicados con wheel/sdist/SHA256SUMS: https://github.com/Segtem/oracle-mcp/releases/tag/v0.1.2. CI exitoso. En Factory, web publicada verificada HTTP 200 e idéntica a main; en MCP, herramienta global actualizada desde release con hash y sin trackertast.
 
+### Nota (2026-10-04 00:52:01 UTC)
+
+PyPI oracle-mcp 0.1.2 verificado en entorno nuevo: wheel/sdist coinciden con SHA256 del release y la metadata instala oracle-task 0.2.0, sin trackertast. Instalación global renovada desde PyPI. Evidencia completa en Oracle, tarea 20261003-183936-migrar-task, resultados.json.
 
 ## Próximo paso
 
-El mantenedor publica 0.1.2 en PyPI con los artefactos explícitos de dist/. Verificar hashes, metadata e instalación nueva; luego retirar trackertast según la coordinación de Oracle 20261003-183936-migrar-task.
+Ninguno en este consumidor. El retiro de trackertast se coordina en Oracle, tarea 20261003-183936-migrar-task.
