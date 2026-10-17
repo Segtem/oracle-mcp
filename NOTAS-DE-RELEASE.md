@@ -1,3 +1,13 @@
+# Oracle MCP 0.1.3
+
+Fija `oracle-metalenguaje==0.39.0` (antes 0.38.1). Las herramientas MCP no cambian: `oracle_juzgar` sigue
+recibiendo la evidencia en línea, así que el `--con` repetible de Oracle 0.39.0 no la afecta. Las 156 pruebas
+pasan con Oracle 0.39.0 y Oracle Task 0.2.0.
+
+```bash
+uv publish dist/oracle_mcp-0.1.3-py3-none-any.whl dist/oracle_mcp-0.1.3.tar.gz
+```
+
 # Oracle MCP 0.1.2
 
 Migra la dependencia a `oracle-task==0.2.0` y los imports a `oracle_task`. La herramienta MCP

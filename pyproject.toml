@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "oracle-metalenguaje==0.38.1",
+    "oracle-metalenguaje==0.39.0",
     "oracle-task==0.2.0",
 ]
 
